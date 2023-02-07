@@ -19,12 +19,15 @@ package com.android.internal.util;
 import android.app.Application;
 import android.content.res.Resources;
 import android.os.Build;
+import android.os.Build.VERSION;
 import android.util.Log;
 
 import com.android.internal.R;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PropImitationHooks {
 
@@ -41,9 +44,59 @@ public class PropImitationHooks {
     private static final String PACKAGE_FINSKY = "com.android.vending";
     private static final String PACKAGE_GMS = "com.google.android.gms";
     private static final String PROCESS_GMS_UNSTABLE = PACKAGE_GMS + ".unstable";
-
+    ////////////
+    //Photos
+    private static final boolean sSpoofGapps = true;
+    private static final String PACKAGE_GPHOTOS = "com.google.android.apps.photos";
+    private static final Map<String, Object> sP1Props = new HashMap<>();
+    static {
+        sP1Props.put("BRAND", "google");
+        sP1Props.put("MANUFACTURER", "Google");
+        sP1Props.put("DEVICE", "marlin");
+        sP1Props.put("PRODUCT", "marlin");
+        sP1Props.put("MODEL", "Pixel XL");
+        sP1Props.put("FINGERPRINT", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys");
+    }
+    private static final String[] sFeaturesBlacklist = {
+        "PIXEL_2017_PRELOAD",
+        "PIXEL_2018_PRELOAD",
+        "PIXEL_2019_MIDYEAR_PRELOAD",
+        "PIXEL_2019_PRELOAD",
+        "PIXEL_2020_EXPERIENCE",
+        "PIXEL_2020_MIDYEAR_EXPERIENCE",
+        "PIXEL_2021_EXPERIENCE",
+        "PIXEL_2021_MIDYEAR_EXPERIENCE"
+    };
+    ///////////////////
+    //Spoof as cheetah    
+    private static final Map<String, Object> sP7Props = new HashMap<>();
+    static {
+        sP7Props.put("BRAND", "google");
+        sP7Props.put("MANUFACTURER", "Google");
+        sP7Props.put("DEVICE", "cheetah");
+        sP7Props.put("PRODUCT", "cheetah");
+        sP7Props.put("MODEL", "Pixel 7 Pro");
+        sP7Props.put("FINGERPRINT", "google/cheetah/cheetah:13/TQ1A.230205.002/9471150:user/release-keys");
+    }
+    // Packages to Spoof as Pixel 7 Pro
+    private static final String[] packagesToChangePixel7Pro = {
+            "com.google.android.quicksearchbox",
+            "com.google.android.apps.turbo",
+            "com.google.android.inputmethod.latin",
+            "com.google.android.apps.subscriptions.red",
+            "com.google.android.apps.privacy.wildlife",
+            "com.google.android.apps.googleassistant",
+            "com.google.android.apps.nbu.files",
+            "com.google.android.apps.podcasts",
+            "com.google.android.apps.tachyon",
+            "com.google.android.apps.wallpaper",
+            "com.google.android.contacts",
+            "com.google.android.deskclock"
+    };
+    ///////////////////
     private static volatile boolean sIsGms = false;
     private static volatile boolean sIsFinsky = false;
+    private static volatile boolean sIsPhotos = false;
 
     public static void setProps(Application app) {
         final String packageName = app.getPackageName();
@@ -55,6 +108,7 @@ public class PropImitationHooks {
 
         sIsGms = packageName.equals(PACKAGE_GMS) && processName.equals(PROCESS_GMS_UNSTABLE);
         sIsFinsky = packageName.equals(PACKAGE_FINSKY);
+        sIsPhotos = sSpoofGapps && packageName.equals(PACKAGE_GPHOTOS);        
 
         if (!sCertifiedFp.isEmpty() && (sIsGms || sIsFinsky)) {
             dlog("Setting certified fingerprint for: " + packageName);
@@ -62,6 +116,14 @@ public class PropImitationHooks {
         } else if (!sStockFp.isEmpty() && packageName.equals(PACKAGE_ARCORE)) {
             dlog("Setting stock fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sStockFp);
+        } else if (sIsPhotos) {
+            dlog("Spoofing Pixel XL for Google Photos");
+            sP1Props.forEach((k, v) -> setPropValue(k, v));
+        } else if (
+        	Arrays.stream(packagesToChangePixel7Pro).anyMatch(packageName::contains)
+                   ) {
+            dlog("Spoofing Pixel 7 Pro for: " + packageName);
+            sP7Props.forEach((k, v) -> setPropValue(k, v));
         }
     }
 
@@ -88,6 +150,15 @@ public class PropImitationHooks {
             dlog("Blocked key attestation sIsGms=" + sIsGms + " sIsFinsky=" + sIsFinsky);
             throw new UnsupportedOperationException();
         }
+    }
+
+    public static boolean hasSystemFeature(String name, boolean def) {
+        if (sIsPhotos && def &&
+                Arrays.stream(sFeaturesBlacklist).anyMatch(name::contains)) {
+            dlog("Blocked system feature " + name + " for Google Photos");
+            return false;
+        }
+        return def;
     }
 
     public static void dlog(String msg) {
