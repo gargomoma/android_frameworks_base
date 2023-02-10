@@ -48,15 +48,6 @@ public class PropImitationHooks {
     //Photos
     private static final boolean sSpoofGapps = true;
     private static final String PACKAGE_GPHOTOS = "com.google.android.apps.photos";
-    private static final Map<String, Object> sP1Props = new HashMap<>();
-    static {
-        sP1Props.put("BRAND", "google");
-        sP1Props.put("MANUFACTURER", "Google");
-        sP1Props.put("DEVICE", "marlin");
-        sP1Props.put("PRODUCT", "marlin");
-        sP1Props.put("MODEL", "Pixel XL");
-        sP1Props.put("FINGERPRINT", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys");
-    }
     private static final String[] sFeaturesBlacklist = {
         "PIXEL_2017_PRELOAD",
         "PIXEL_2018_PRELOAD",
@@ -110,7 +101,10 @@ public class PropImitationHooks {
         sIsFinsky = packageName.equals(PACKAGE_FINSKY);
         sIsPhotos = sSpoofGapps && packageName.equals(PACKAGE_GPHOTOS);        
 
-        if (!sCertifiedFp.isEmpty() && (sIsGms || sIsFinsky)) {
+        if (sIsGms) {
+            dlog("Setting Pixel XL fingerprint for: " + packageName);
+            spoofBuildGms();
+        } else if (!sCertifiedFp.isEmpty() && (sIsFinsky)) { //Removed sIsGms
             dlog("Setting certified fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sCertifiedFp);
         } else if (!sStockFp.isEmpty() && packageName.equals(PACKAGE_ARCORE)) {
@@ -118,7 +112,7 @@ public class PropImitationHooks {
             setPropValue("FINGERPRINT", sStockFp);
         } else if (sIsPhotos) {
             dlog("Spoofing Pixel XL for Google Photos");
-            sP1Props.forEach((k, v) -> setPropValue(k, v));
+            spoofBuildGms();
         } else if (
         	Arrays.stream(packagesToChangePixel7Pro).anyMatch(packageName::contains)
                    ) {
@@ -138,7 +132,30 @@ public class PropImitationHooks {
             Log.e(TAG, "Failed to set prop " + key, e);
         }
     }
-
+    
+    private static void setVersionField(String key, Integer value) {
+        try {
+            // Unlock
+            Field field = Build.VERSION.class.getDeclaredField(key);
+            field.setAccessible(true);
+            // Edit
+            field.set(null, value);
+            // Lock
+            field.setAccessible(false);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            Log.e(TAG, "Failed to spoof Build." + key, e);
+        }
+    }
+        
+    private static void spoofBuildGms() {
+        // Alter model name and fingerprint to avoid hardware attestation enforcement
+        setPropValue("FINGERPRINT", "google/marlin/marlin:7.1.2/NJH47F/4146041:user/release-keys");
+        setPropValue("PRODUCT", "marlin");
+        setPropValue("DEVICE", "marlin");
+        setPropValue("MODEL", "Pixel XL");
+        setVersionField("DEVICE_INITIAL_SDK_INT", Build.VERSION_CODES.N_MR1);
+    }
+    
     private static boolean isCallerSafetyNet() {
         return sIsGms && Arrays.stream(Thread.currentThread().getStackTrace())
                 .anyMatch(elem -> elem.getClassName().contains("DroidGuard"));
