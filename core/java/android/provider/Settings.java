@@ -5691,13 +5691,6 @@ public final class Settings {
         }
 
         /**
-         * Whether to disable qs on secure lockscreen.
-         * Default 0
-         * @hide
-         */
-        public static final String SECURE_LOCKSCREEN_QS_DISABLED = "secure_lockscreen_qs_disabled";
-
-        /**
          * These entries are considered common between the personal and the managed profile,
          * since the managed profile doesn't get to change them.
          */
@@ -6753,6 +6746,13 @@ public final class Settings {
          */
         public static final String BLUETOOTH_LE_BROADCAST_APP_SOURCE_NAME =
                 "bluetooth_le_broadcast_app_source_name";
+
+        /**
+         * Whether to disable qs on secure lockscreen.
+         * Default 0
+         * @hide
+         */
+        public static final String SECURE_LOCKSCREEN_QS_DISABLED = "secure_lockscreen_qs_disabled";
 
         /**
          * Setting to indicate that on device captions are enabled.
