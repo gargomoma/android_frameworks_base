@@ -100,17 +100,7 @@ public class PropImitationHooks {
             "com.google.android.contacts",
             "com.google.android.deskclock"
     };
-    ///////////////////
-    private static final Map<String, Object> commonProps = Map.of(
-        "BRAND", "google",
-        "MANUFACTURER", "Google",
-        "IS_DEBUGGABLE", false,
-        "IS_ENG", false,
-        "IS_USERDEBUG", false,
-        "IS_USER", true,
-        "TYPE", "user",
-        "TAGS", "release-keys"
-    );    
+    ///////////////////  
     private static volatile boolean sIsGms = false;
     private static volatile boolean sIsFinsky = false;
     private static volatile boolean sIsPhotos = false;
