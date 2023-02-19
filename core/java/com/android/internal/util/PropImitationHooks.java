@@ -123,19 +123,19 @@ public class PropImitationHooks {
         } else if (!sCertifiedFp.isEmpty() && (sIsFinsky)) { //Removed sIsGms
             dlog("Setting certified fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sCertifiedFp);
-            commonProps.forEach(PixelPropsUtils::setPropValue);
+            commonProps.forEach(PropImitationHooks::setPropValue);
         } else if (!sStockFp.isEmpty() && packageName.equals(PACKAGE_ARCORE)) {
             dlog("Setting stock fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sStockFp);
-            commonProps.forEach(PixelPropsUtils::setPropValue);
+            commonProps.forEach(PropImitationHooks::setPropValue);
         } else if (sIsPhotos) {
             dlog("Spoofing Pixel XL for Google Photos");
-            marlinProps.forEach(PixelPropsUtils::setPropValue);
-            commonProps.forEach(PixelPropsUtils::setPropValue);
+            marlinProps.forEach(PropImitationHooks::setPropValue);
+            commonProps.forEach(PropImitationHooks::setPropValue);
         } else if ( Arrays.stream(packagesToChangePixel7Pro).anyMatch(packageName::contains) ) {
             dlog("Spoofing Pixel 7 Pro for: " + packageName);
-            sP7Props.forEach(PixelPropsUtils::setPropValue);
-            commonProps.forEach(PixelPropsUtils::setPropValue);
+            sP7Props.forEach(PropImitationHooks::setPropValue);
+            commonProps.forEach(PropImitationHooks::setPropValue);
         }
     }
 
@@ -167,8 +167,8 @@ public class PropImitationHooks {
         
     private static void spoofBuildGms() {
         // Alter model name and fingerprint to avoid hardware attestation enforcement
-        marlinProps.forEach(PixelPropsUtils::setPropValue);
-        commonProps.forEach(PixelPropsUtils::setPropValue);
+        marlinProps.forEach(PropImitationHooks::setPropValue);
+        commonProps.forEach(PropImitationHooks::setPropValue);
         setVersionField("DEVICE_INITIAL_SDK_INT", Build.VERSION_CODES.N_MR1);
     }
     
