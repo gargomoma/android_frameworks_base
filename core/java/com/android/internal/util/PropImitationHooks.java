@@ -32,7 +32,6 @@ import java.util.Map;
 public class PropImitationHooks {
 
     private static final String TAG = "PropImitationHooks";
-    private static final boolean DEBUG = false;
 
     private static final String sCertifiedFp =
             Resources.getSystem().getString(R.string.config_certifiedFingerprint);
@@ -59,16 +58,33 @@ public class PropImitationHooks {
         "PIXEL_2021_MIDYEAR_EXPERIENCE"
     };
     ///////////////////
+    private static final Map<String, Object> commonProps = Map.of(
+        "BRAND", "google",
+        "MANUFACTURER", "Google",
+        "IS_DEBUGGABLE", false,
+        "IS_ENG", false,
+        "IS_USERDEBUG", false,
+        "IS_USER", true,
+        "TYPE", "user",
+        "TAGS", "release-keys"
+    );
+    private static final Map<String, String> marlinProps = Map.of(
+        "ID", "QP1A.191005.007.A3",
+        "DEVICE", "marlin",
+        "PRODUCT", "marlin",
+        "MODEL", "Pixel XL",
+        "FINGERPRINT", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys",
+        "SECURITY_PATCH", "2019-12-05"
+    );
     //Spoof as cheetah    
-    private static final Map<String, Object> sP7Props = new HashMap<>();
-    static {
-        sP7Props.put("BRAND", "google");
-        sP7Props.put("MANUFACTURER", "Google");
-        sP7Props.put("DEVICE", "cheetah");
-        sP7Props.put("PRODUCT", "cheetah");
-        sP7Props.put("MODEL", "Pixel 7 Pro");
-        sP7Props.put("FINGERPRINT", "google/cheetah/cheetah:13/TQ1A.230205.002/9471150:user/release-keys");
-    }
+    private static final Map<String, String> sP7Props = Map.of(
+        "BRAND", "google"
+        "MANUFACTURER", "Google"
+        "DEVICE", "cheetah"
+        "PRODUCT", "cheetah"
+        "MODEL", "Pixel 7 Pro"
+        "FINGERPRINT", "google/cheetah/cheetah:13/TQ1A.230205.002/9471150:user/release-keys"
+    );
     // Packages to Spoof as Pixel 7 Pro
     private static final String[] packagesToChangePixel7Pro = {
             "com.google.android.quicksearchbox",
@@ -85,6 +101,16 @@ public class PropImitationHooks {
             "com.google.android.deskclock"
     };
     ///////////////////
+    private static final Map<String, Object> commonProps = Map.of(
+        "BRAND", "google",
+        "MANUFACTURER", "Google",
+        "IS_DEBUGGABLE", false,
+        "IS_ENG", false,
+        "IS_USERDEBUG", false,
+        "IS_USER", true,
+        "TYPE", "user",
+        "TAGS", "release-keys"
+    );    
     private static volatile boolean sIsGms = false;
     private static volatile boolean sIsFinsky = false;
     private static volatile boolean sIsPhotos = false;
@@ -107,17 +133,19 @@ public class PropImitationHooks {
         } else if (!sCertifiedFp.isEmpty() && (sIsFinsky)) { //Removed sIsGms
             dlog("Setting certified fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sCertifiedFp);
+            commonProps.forEach(PixelPropsUtils::setPropValue);
         } else if (!sStockFp.isEmpty() && packageName.equals(PACKAGE_ARCORE)) {
             dlog("Setting stock fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sStockFp);
+            commonProps.forEach(PixelPropsUtils::setPropValue);
         } else if (sIsPhotos) {
             dlog("Spoofing Pixel XL for Google Photos");
-            spoofBuildGms();
-        } else if (
-        	Arrays.stream(packagesToChangePixel7Pro).anyMatch(packageName::contains)
-                   ) {
+            marlinProps.forEach(PixelPropsUtils::setPropValue);
+            commonProps.forEach(PixelPropsUtils::setPropValue);
+        } else if ( Arrays.stream(packagesToChangePixel7Pro).anyMatch(packageName::contains) ) {
             dlog("Spoofing Pixel 7 Pro for: " + packageName);
-            sP7Props.forEach((k, v) -> setPropValue(k, v));
+            sP7Props.forEach(PixelPropsUtils::setPropValue);
+            commonProps.forEach(PixelPropsUtils::setPropValue);
         }
     }
 
@@ -149,10 +177,8 @@ public class PropImitationHooks {
         
     private static void spoofBuildGms() {
         // Alter model name and fingerprint to avoid hardware attestation enforcement
-        setPropValue("FINGERPRINT", "google/marlin/marlin:7.1.2/NJH47F/4146041:user/release-keys");
-        setPropValue("PRODUCT", "marlin");
-        setPropValue("DEVICE", "marlin");
-        setPropValue("MODEL", "Pixel XL");
+        marlinProps.forEach(PixelPropsUtils::setPropValue);
+        commonProps.forEach(PixelPropsUtils::setPropValue);
         setVersionField("DEVICE_INITIAL_SDK_INT", Build.VERSION_CODES.N_MR1);
     }
     
@@ -178,7 +204,11 @@ public class PropImitationHooks {
         return def;
     }
 
+    private static boolean isLoggable() {
+        return Log.isLoggable(TAG, Log.DEBUG);
+    }
+
     public static void dlog(String msg) {
-      if (DEBUG) Log.d(TAG, msg);
+      if (isLoggable()) Log.d(TAG, msg);
     }
 }
