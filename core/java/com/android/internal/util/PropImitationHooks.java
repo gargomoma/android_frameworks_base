@@ -78,11 +78,11 @@ public class PropImitationHooks {
     );
     //Spoof as cheetah    
     private static final Map<String, String> sP7Props = Map.of(
-        "BRAND", "google"
-        "MANUFACTURER", "Google"
-        "DEVICE", "cheetah"
-        "PRODUCT", "cheetah"
-        "MODEL", "Pixel 7 Pro"
+        "BRAND", "google",
+        "MANUFACTURER", "Google",
+        "DEVICE", "cheetah",
+        "PRODUCT", "cheetah",
+        "MODEL", "Pixel 7 Pro",
         "FINGERPRINT", "google/cheetah/cheetah:13/TQ1A.230205.002/9471150:user/release-keys"
     );
     // Packages to Spoof as Pixel 7 Pro
