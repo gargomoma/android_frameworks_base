@@ -6748,6 +6748,13 @@ public final class Settings {
                 "bluetooth_le_broadcast_app_source_name";
 
         /**
+         * Whether to disable qs on secure lockscreen.
+         * Default 0
+         * @hide
+         */
+        public static final String SECURE_LOCKSCREEN_QS_DISABLED = "secure_lockscreen_qs_disabled";
+
+        /**
          * Setting to indicate that on device captions are enabled.
          *
          * @hide
