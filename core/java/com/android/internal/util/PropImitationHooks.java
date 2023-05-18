@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2022 Paranoid Android
- * Copyright (C) 2022 StatiXOS
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +32,6 @@ import java.util.Map;
 public class PropImitationHooks {
 
     private static final String TAG = "PropImitationHooks";
-    private static final boolean DEBUG = false;
 
     private static final String sCertifiedFp =
             Resources.getSystem().getString(R.string.config_certifiedFingerprint);
@@ -45,24 +43,57 @@ public class PropImitationHooks {
     private static final String PACKAGE_FINSKY = "com.android.vending";
     private static final String PACKAGE_GMS = "com.google.android.gms";
     private static final String PROCESS_GMS_UNSTABLE = PACKAGE_GMS + ".unstable";
-
-    private static final String PACKAGE_SUBSCRIPTION_RED = "com.google.android.apps.subscriptions.red";
-    private static final String PACKAGE_TURBO = "com.google.android.apps.turbo";
-    private static final String PACKAGE_VELVET = "com.google.android.googlequicksearchbox";
-    private static final String PACKAGE_GBOARD = "com.google.android.inputmethod.latin";
-    private static final String PACKAGE_SETUPWIZARD = "com.google.android.setupwizard";
-    private static final Map<String, Object> sP7Props = new HashMap<>();
-    static {
-        sP7Props.put("BRAND", "google");
-        sP7Props.put("MANUFACTURER", "Google");
-        sP7Props.put("DEVICE", "cheetah");
-        sP7Props.put("PRODUCT", "cheetah");
-        sP7Props.put("MODEL", "Pixel 7 Pro");
-        sP7Props.put("FINGERPRINT", "google/cheetah/cheetah:13/TQ2A.230505.002/9891397:user/release-keys");
-    }
-
+    ////////////
+    //Photos
+    private static final boolean sSpoofPhotos = true;
+    private static final String PACKAGE_GPHOTOS = "com.google.android.apps.photos";
+    private static final String[] sFeaturesBlacklist = {
+        "PIXEL_2017_PRELOAD",
+        "PIXEL_2018_PRELOAD",
+        "PIXEL_2019_MIDYEAR_PRELOAD",
+        "PIXEL_2019_PRELOAD",
+        "PIXEL_2020_EXPERIENCE",
+        "PIXEL_2020_MIDYEAR_EXPERIENCE",
+        "PIXEL_2021_EXPERIENCE",
+        "PIXEL_2021_MIDYEAR_EXPERIENCE"
+    };
+    ///////////////////
+    private static final Map<String, String> marlinProps = Map.of(
+        "DEVICE", "marlin",
+        "PRODUCT", "marlin",
+        "MODEL", "Pixel XL",
+        "FINGERPRINT", "google/marlin/marlin:7.1.2/NJH47F/4146041:user/release-keys"
+    );
+    //Spoof as cheetah    
+    private static final Map<String, String> sP7Props = Map.of(
+        "BRAND", "google",
+        "MANUFACTURER", "Google",
+        "DEVICE", "cheetah",
+        "PRODUCT", "cheetah",
+        "MODEL", "Pixel 7 Pro",
+        "FINGERPRINT", "google/cheetah/cheetah:13/TQ2A.230505.002/9891397:user/release-keys"
+    );
+    // Packages to Spoof as Pixel 7 Pro
+    private static final String[] packagesToChangePixel7Pro = {
+            "com.google.android.quicksearchbox",
+            "com.google.android.apps.turbo",
+            "com.google.android.inputmethod.latin",
+            "com.google.android.apps.subscriptions.red",
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.setupwizard",
+            "com.google.android.apps.privacy.wildlife",
+            "com.google.android.apps.googleassistant",
+            "com.google.android.apps.nbu.files",
+            "com.google.android.apps.podcasts",
+            "com.google.android.apps.tachyon",
+            "com.google.android.apps.wallpaper",
+            "com.google.android.contacts",
+            "com.google.android.deskclock"
+    };
+    ///////////////////  
     private static volatile boolean sIsGms = false;
     private static volatile boolean sIsFinsky = false;
+    private static volatile boolean sIsPhotos = false;
 
     public static void setProps(Application app) {
         final String packageName = app.getPackageName();
@@ -74,20 +105,23 @@ public class PropImitationHooks {
 
         sIsGms = packageName.equals(PACKAGE_GMS) && processName.equals(PROCESS_GMS_UNSTABLE);
         sIsFinsky = packageName.equals(PACKAGE_FINSKY);
+        sIsPhotos = sSpoofPhotos && packageName.equals(PACKAGE_GPHOTOS);        
 
         if (sIsGms) {
             dlog("Setting Pixel XL fingerprint for: " + packageName);
             spoofBuildGms();
-        } else if (!sCertifiedFp.isEmpty() && sIsFinsky) {
+        } else if (!sCertifiedFp.isEmpty() && sIsFinsky) { //Removed sIsGms
             dlog("Setting certified fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sCertifiedFp);
         } else if (!sStockFp.isEmpty() && packageName.equals(PACKAGE_ARCORE)) {
             dlog("Setting stock fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sStockFp);
-        } else if (packageName.equals(PACKAGE_SUBSCRIPTION_RED) || packageName.equals(PACKAGE_TURBO)
-                   || packageName.equals(PACKAGE_VELVET) || packageName.equals(PACKAGE_GBOARD) || packageName.equals(PACKAGE_SETUPWIZARD) || packageName.equals(PACKAGE_GMS)) {
+        } else if (sIsPhotos) {
+            dlog("Spoofing Pixel XL for Google Photos");
+            marlinProps.forEach(PropImitationHooks::setPropValue);
+        } else if ( Arrays.stream(packagesToChangePixel7Pro).anyMatch(packageName::contains) ) {
             dlog("Spoofing Pixel 7 Pro for: " + packageName);
-            sP7Props.forEach((k, v) -> setPropValue(k, v));
+            sP7Props.forEach(PropImitationHooks::setPropValue);
         }
     }
 
@@ -102,7 +136,7 @@ public class PropImitationHooks {
             Log.e(TAG, "Failed to set prop " + key, e);
         }
     }
-
+    
     private static void setVersionField(String key, Integer value) {
         try {
             // Unlock
@@ -116,16 +150,13 @@ public class PropImitationHooks {
             Log.e(TAG, "Failed to spoof Build." + key, e);
         }
     }
-
+        
     private static void spoofBuildGms() {
         // Alter model name and fingerprint to avoid hardware attestation enforcement
-        setPropValue("FINGERPRINT", "google/marlin/marlin:7.1.2/NJH47F/4146041:user/release-keys");
-        setPropValue("PRODUCT", "marlin");
-        setPropValue("DEVICE", "marlin");
-        setPropValue("MODEL", "Pixel XL");
+        marlinProps.forEach(PropImitationHooks::setPropValue);
         setVersionField("DEVICE_INITIAL_SDK_INT", Build.VERSION_CODES.N_MR1);
     }
-
+    
     private static boolean isCallerSafetyNet() {
         return sIsGms && Arrays.stream(Thread.currentThread().getStackTrace())
                 .anyMatch(elem -> elem.getClassName().contains("DroidGuard"));
@@ -139,7 +170,20 @@ public class PropImitationHooks {
         }
     }
 
+    public static boolean hasSystemFeature(String name, boolean def) {
+        if (sIsPhotos && def &&
+                Arrays.stream(sFeaturesBlacklist).anyMatch(name::contains)) {
+            dlog("Blocked system feature " + name + " for Google Photos");
+            return false;
+        }
+        return def;
+    }
+
+    private static boolean isLoggable() {
+        return Log.isLoggable(TAG, Log.DEBUG);
+    }
+
     public static void dlog(String msg) {
-      if (DEBUG) Log.d(TAG, msg);
+      if (isLoggable()) Log.d(TAG, msg);
     }
 }
